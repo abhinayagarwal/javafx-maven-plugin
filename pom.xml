@@ -32,6 +32,7 @@
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <javafx.version>12.0.1</javafx.version>
+    <compiler.plugin.version>3.8.0</compiler.plugin.version>  
     <javadoc.plugin.version>3.1.0</javadoc.plugin.version>
     <gpg.plugin.version>1.6</gpg.plugin.version>
   </properties>
@@ -142,7 +143,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
+        <version>${compiler.plugin.version}</version>
         <configuration>
           <source>11</source>
           <target>11</target>
