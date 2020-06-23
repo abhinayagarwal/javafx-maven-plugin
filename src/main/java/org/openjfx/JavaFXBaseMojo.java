@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Gluon
+ * Copyright 2019, 2020, Gluon
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -251,13 +251,14 @@ abstract class JavaFXBaseMojo extends AbstractMojo {
             getLog().debug("Total dependencyArtifacts: " + dependencyArtifacts.size());
             ResolvePathsRequest<File> fileResolvePathsRequest = ResolvePathsRequest.ofFiles(dependencyArtifacts);
 
-            ResolvePathsResult<File> resolvePathsResult;
+            getLog().debug("module descriptor: " + moduleDescriptorPath);
             if (moduleDescriptorPath != null) {
-                getLog().debug("module descriptor: " + moduleDescriptorPath);
                 fileResolvePathsRequest = fileResolvePathsRequest.setMainModuleDescriptor(moduleDescriptorPath);
+            }
+            ResolvePathsResult<File> resolvePathsResult = locationManager.resolvePaths(fileResolvePathsRequest);
+            resolvePathsResult.getPathElements().forEach((key, value) -> pathElements.put(key.getPath(), value));
 
-                resolvePathsResult = locationManager.resolvePaths(fileResolvePathsRequest);
-
+            if (moduleDescriptorPath != null) {
                 if (!resolvePathsResult.getPathExceptions().isEmpty() && !isMavenUsingJava8()) {
                     // for each path exception, show a warning to plugin user...
                     for (Map.Entry<File, Exception> pathException : resolvePathsResult.getPathExceptions().entrySet()) {
@@ -291,15 +292,8 @@ abstract class JavaFXBaseMojo extends AbstractMojo {
                         break;
                     }
                 }
-                getLog().debug("pathElements: " + resolvePathsResult.getPathElements().size());
-                resolvePathsResult.getPathElements().entrySet()
-                        .forEach(entry -> pathElements.put(entry.getKey().getPath(), entry.getValue()));
-                getLog().debug("classpathElements: " + resolvePathsResult.getClasspathElements().size());
-                resolvePathsResult.getClasspathElements()
-                        .forEach(file -> classpathElements.add(file.getPath()));
-                getLog().debug("modulepathElements: " + resolvePathsResult.getModulepathElements().size());
-                resolvePathsResult.getModulepathElements().keySet()
-                        .forEach(file -> modulepathElements.add(file.getPath()));
+                resolvePathsResult.getClasspathElements().forEach(file -> classpathElements.add(file.getPath()));
+                resolvePathsResult.getModulepathElements().keySet().forEach(file -> modulepathElements.add(file.getPath()));
 
                 if (includePathExceptionsInClasspath) {
                     resolvePathsResult.getPathExceptions().keySet()
@@ -316,7 +310,6 @@ abstract class JavaFXBaseMojo extends AbstractMojo {
                     }
                 });
             }
-
         } catch (Exception e) {
             getLog().warn(e.getMessage());
         }
