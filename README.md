@@ -200,14 +200,16 @@ For instance, with the following configuration:
     <artifactId>javafx-maven-plugin</artifactId>
     <version>0.0.4</version>
     <configuration>
-        <stripDebug>true</stripDebug>
-        <compress>2</compress>
-        <noHeaderFiles>true</noHeaderFiles>
-        <noManPages>true</noManPages>
-        <launcher>hellofx</launcher>
-        <jlinkImageName>hello</jlinkImageName>
-        <jlinkZipName>hellozip</jlinkZipName>
-        <mainClass>hellofx/org.openjfx.MainApp</mainClass>
+        <jlink>
+            <stripDebug>true</stripDebug>
+            <compress>2</compress>
+            <noHeaderFiles>true</noHeaderFiles>
+            <noManPages>true</noManPages>
+            <launcher>hellofx</launcher>
+            <imageName>hello</imageName>
+            <zipName>hellozip</zipName>
+            <mainClass>hellofx/org.openjfx.MainApp</mainClass>
+        </jlink>
     </configuration>
 </plugin>
 ```

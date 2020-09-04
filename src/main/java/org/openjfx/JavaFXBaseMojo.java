@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Gluon
+ * Copyright 2019, 2020, Gluon
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.openjfx.RuntimePath.CLASSPATH;
+import static org.openjfx.RuntimePath.MODULEPATH;
 
 abstract class JavaFXBaseMojo extends AbstractMojo {
 
@@ -89,6 +93,9 @@ abstract class JavaFXBaseMojo extends AbstractMojo {
 
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.directory}")
     File builddir;
+
+    @Parameter(property = "javafx.runtimePath", defaultValue = "DEFAULT")
+    RuntimePath runtimePath;
 
     /**
      * The current working directory. Optional. If not specified, basedir will be used.
@@ -132,13 +139,13 @@ abstract class JavaFXBaseMojo extends AbstractMojo {
     String commandlineArgs;
 
     /**
-     * <p>The -source argument for the Java compiler.</p>
+     * The -source argument for the Java compiler.
      */
     @Parameter(property = "javafx.source", defaultValue = "11")
     private String source;
 
     /**
-     * <p>The -target argument for the Java compiler.</p>
+     * The -target argument for the Java compiler.
      */
     @Parameter(property = "javafx.target", defaultValue = "11")
     private String target;

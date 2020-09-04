@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Gluon
+ * Copyright 2019, 2020, Gluon
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.openjfx.RuntimePath.CLASSPATH;
+import static org.openjfx.RuntimePath.MODULEPATH;
 
 @Mojo(name = "run", requiresDependencyResolution = ResolutionScope.RUNTIME)
 @Execute(phase = LifecyclePhase.PROCESS_CLASSES)
@@ -134,7 +136,7 @@ public class JavaFXRunMojo extends JavaFXBaseMojo {
                     .forEach(commandArguments::add);
         }
         if (!oldJDK) {
-            if (modulepathElements != null && !modulepathElements.isEmpty()) {
+            if (runtimePath == MODULEPATH || modulepathElements != null && !modulepathElements.isEmpty()) {
                 commandArguments.add(" --module-path");
                 String modulePath = StringUtils.join(modulepathElements.iterator(), File.pathSeparator);
                 commandArguments.add(modulePath);
@@ -154,7 +156,7 @@ public class JavaFXRunMojo extends JavaFXBaseMojo {
             }
         }
 
-        if (classpathElements != null && (oldJDK || !classpathElements.isEmpty())) {
+        if (runtimePath == CLASSPATH || classpathElements != null && (oldJDK || !classpathElements.isEmpty())) {
             commandArguments.add(" -classpath");
             String classpath = "";
             if (oldJDK || moduleDescriptor != null) {
@@ -167,11 +169,10 @@ public class JavaFXRunMojo extends JavaFXBaseMojo {
         if (mainClass != null) {
             if (moduleDescriptor != null) {
                 commandArguments.add(" --module");
-                if (mainClass.contains("/")) {
-                    commandArguments.add(" " + mainClass);
-                } else {
-                    getLog().warn("Main module name not found in <mainClass>. Module name will be assumed from module-info.java");
+                if (!mainClass.startsWith(moduleDescriptor.name() + "/")) {
                     commandArguments.add(" " + moduleDescriptor.name() + "/" + mainClass);
+                } else {
+                    commandArguments.add(" " + mainClass);
                 }
             } else {
                 commandArguments.add(" " + mainClass);

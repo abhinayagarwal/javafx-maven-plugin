@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Gluon
+ * Copyright 2019, 2020, Gluon
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,10 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Mojo for javafx:jlink goal.
+ * This mojo is responsible for all jlink related processes.
+ */
 @Mojo(name = "jlink", requiresDependencyResolution = ResolutionScope.RUNTIME)
 @Execute(phase = LifecyclePhase.PROCESS_CLASSES)
 public class JavaFXJLinkMojo extends JavaFXBaseMojo {
@@ -59,75 +64,98 @@ public class JavaFXJLinkMojo extends JavaFXBaseMojo {
     /**
      * Strips debug information out, equivalent to <code>-G, --strip-debug</code>,
      * default false
+     *
+     * @deprecated Use {@link JLink#stripDebug <jlink><stripdebug>} instead.
      */
     @Parameter(property = "javafx.stripDebug", defaultValue = "false")
+    @Deprecated
     private boolean stripDebug;
-
-    /**
-     * Strip Java debug attributes out, equivalent to <code>--strip-java-debug-attributes</code>,
-     * default false
-     */
-    @Parameter(property = "javafx.stripJavaDebugAttributes", defaultValue = "false")
-    private boolean stripJavaDebugAttributes;
 
     /**
      * Compression level of the resources being used, equivalent to:
      * <code>-c, --compress=level</code>. Valid values: <code>0, 1, 2</code>,
      * default 0
+     *
+     * @deprecated Use {@link JLink#compress <jlink><compress>} instead.
      */
     @Parameter(property = "javafx.compress", defaultValue = "0")
+    @Deprecated
     private Integer compress;
 
     /**
      * Remove the <code>includes</code> directory in the resulting runtime image,
      * equivalent to: <code>--no-header-files</code>, default false
+     *
+     * @deprecated Use {@link JLink#noHeaderFiles <jlink><noHeaderFiles>} instead.
      */
     @Parameter(property = "javafx.noHeaderFiles", defaultValue = "false")
+    @Deprecated
     private boolean noHeaderFiles;
 
     /**
      * Remove the <code>man</code> directory in the resulting Java runtime image,
      * equivalent to: <code>--no-man-pages</code>, default false
+     *
+     * @deprecated Use {@link JLink#noManPages <jlink><noManPages>} instead.
      */
     @Parameter(property = "javafx.noManPages", defaultValue = "false")
+    @Deprecated
     private boolean noManPages;
 
     /**
      * Add the option <code>--bind-services</code> or not, default false.
+     *
+     * @deprecated Use {@link JLink#bindServices <jlink><bindServices>} instead.
      */
     @Parameter(property = "javafx.bindServices", defaultValue = "false")
+    @Deprecated
     private boolean bindServices;
 
     /**
      * <code>--ignore-signing-information</code>, default false
+     *
+     * @deprecated Use {@link JLink#ignoreSigningInformation <jlink><ignoreSigningInformation>} instead.
      */
     @Parameter(property = "javafx.ignoreSigningInformation", defaultValue = "false")
+    @Deprecated
     private boolean ignoreSigningInformation;
 
     /**
      * Turn on verbose mode, equivalent to: <code>--verbose</code>, default false
+     *
+     * @deprecated Use {@link JLink#verbose <jlink><verbose>} instead.
      */
     @Parameter(property = "javafx.jlinkVerbose", defaultValue = "false")
+    @Deprecated
     private boolean jlinkVerbose;
 
     /**
      * Add a launcher script, equivalent to:
      * <code>--launcher &lt;name&gt;=&lt;module&gt;[/&lt;mainclass&gt;]</code>.
+     *
+     * @deprecated Use {@link JLink#launcher <jlink><launcher>} instead.
      */
     @Parameter(property = "javafx.launcher")
+    @Deprecated
     private String launcher;
 
     /**
      * The name of the folder with the resulting runtime image,
      * equivalent to <code>--output &lt;path&gt;</code>
+     *
+     *  @deprecated Use {@link JLink#imageName <jlink><imageName>} instead.
      */
     @Parameter(property = "javafx.jlinkImageName", defaultValue = "image")
+    @Deprecated
     private String jlinkImageName;
 
     /**
      * When set, creates a zip of the resulting runtime image.
+     *
+     * @deprecated Use {@link JLink#zipName <jlink><zipName>} instead.
      */
     @Parameter(property = "javafx.jlinkZipName")
+    @Deprecated
     private String jlinkZipName;
 
     /**
@@ -135,21 +163,36 @@ public class JavaFXJLinkMojo extends JavaFXBaseMojo {
      * The executable. Can be a full path or the name of the executable.
      * In the latter case, the executable must be in the PATH for the execution to work.
      * </p>
+     *
+     * @deprecated Use {@link JLink#executable <jlink><executable>} instead.
      */
     @Parameter(property = "javafx.jlinkExecutable", defaultValue = "jlink")
+    @Deprecated
     private String jlinkExecutable;
 
     /**
      * Optional jmodsPath path for local builds.
+     *
+     * @deprecated Use {@link JLink#jmodsPath <jlink><jmodsPath>} instead.
      */
     @Parameter(property = "javafx.jmodsPath")
+    @Deprecated
     private String jmodsPath;
 
     /**
      * The JAR archiver needed for archiving the environments.
+     *
+     * @deprecated Use {@link JLink#zipArchiver <jlink><zipArchiver>} instead.
      */
     @Component(role = Archiver.class, hint = "zip")
+    @Deprecated
     private ZipArchiver zipArchiver;
+
+    /**
+     * A list of options passed to the jlink {@code executable}.
+     */
+    @Parameter(property = "javafx.jlink")
+    private JLink jlink;
 
     public void execute() throws MojoExecutionException {
         if (skip) {
@@ -166,7 +209,7 @@ public class JavaFXJLinkMojo extends JavaFXBaseMojo {
         }
 
         handleWorkingDirectory();
-        
+
         Map<String, String> enviro = handleSystemEnvVariables();
         CommandLine commandLine = getExecutablePath(jlinkExecutable, enviro, workingDirectory);
 
@@ -175,14 +218,13 @@ public class JavaFXJLinkMojo extends JavaFXBaseMojo {
             return;
         }
 
-        if (stripJavaDebugAttributes && !isJLinkVersion13orHigher(commandLine.getExecutable())) {
-            stripJavaDebugAttributes = false;
+        if (jlink.stripJavaDebugAttributes && !isJLinkVersion13orHigher(commandLine.getExecutable())) {
+            jlink.stripJavaDebugAttributes = false;
             getLog().warn("JLink parameter --strip-java-debug-attributes only supported for version 13 and higher");
             getLog().warn("The option 'stripJavaDebugAttributes' was skipped");
         }
 
         try {
-
             List<String> commandArguments = createCommandArguments();
             String[] args = commandArguments.toArray(new String[commandArguments.size()]);
             commandLine.addArguments(args, false);
@@ -290,6 +332,17 @@ public class JavaFXJLinkMojo extends JavaFXBaseMojo {
     private List<String> createCommandArguments() throws MojoExecutionException, MojoFailureException {
         List<String> commandArguments = new ArrayList<>();
         preparePaths(getParent(Paths.get(jlinkExecutable), 2));
+
+        if (jlink.options != null) {
+            jlink.options.stream()
+                    .filter(Objects::nonNull)
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .map(this::splitComplexArgumentString)
+                    .flatMap(Collection::stream)
+                    .forEach(commandArguments::add);
+        }
+
         if (modulepathElements != null && !modulepathElements.isEmpty()) {
             commandArguments.add(" --module-path");
             String modulePath = StringUtils.join(modulepathElements.iterator(), File.pathSeparator);
@@ -322,32 +375,32 @@ public class JavaFXJLinkMojo extends JavaFXBaseMojo {
         }
         commandArguments.add(" " + image.getAbsolutePath());
 
-        if (stripDebug) {
+        if (stripDebug || jlink.stripDebug) {
             commandArguments.add(" --strip-debug");
         }
-        if (stripJavaDebugAttributes) {
+        if (jlink.stripJavaDebugAttributes) {
             commandArguments.add(" --strip-java-debug-attributes");
         }
-        if (bindServices) {
+        if (bindServices || jlink.bindServices) {
             commandArguments.add(" --bind-services");
         }
-        if (ignoreSigningInformation) {
+        if (ignoreSigningInformation || jlink.ignoreSigningInformation) {
             commandArguments.add(" --ignore-signing-information");
         }
-        if (compress != null) {
+        if (compress != null || jlink.compress != null) {
             commandArguments.add(" --compress");
             if (compress < 0 || compress > 2) {
                 throw new MojoFailureException("The given compress parameters " + compress + " is not in the valid value range from 0..2");
             }
             commandArguments.add(" " + compress);
         }
-        if (noHeaderFiles) {
+        if (noHeaderFiles || jlink.noHeaderFiles) {
             commandArguments.add(" --no-header-files");
         }
-        if (noManPages) {
+        if (noManPages || jlink.noManPages) {
             commandArguments.add(" --no-man-pages");
         }
-        if (jlinkVerbose) {
+        if (jlinkVerbose || jlink.verbose) {
             commandArguments.add(" --verbose");
         }
 
